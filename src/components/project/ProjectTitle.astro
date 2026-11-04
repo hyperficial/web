@@ -1,0 +1,16 @@
+---
+/** The display title of a project page. Smaller than the home page name so long titles still fit. */
+interface Props {
+	as?: 'h1' | 'h2' | 'p'
+	class?: string
+}
+
+const { as: Tag = 'h1', class: className = '' } = Astro.props
+---
+
+<Tag
+	class:list={[
+		'font-display text-[clamp(2.5rem,9vw,5.5rem)] leading-[0.98] font-extrabold tracking-[-0.02em] uppercase [font-feature-settings:"cpsp","kern"] [overflow-wrap:anywhere] text-balance',
+		className,
+	]}><slot /></Tag
+>

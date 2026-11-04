@@ -1,0 +1,17 @@
+---
+import ProjectLayout from '../../../layouts/ProjectLayout.astro'
+import ProjectTitle from '../../../components/project/ProjectTitle.astro'
+import ProjectGrid from '../../../components/project/ProjectGrid.astro'
+import { getProjects } from '../../../projects'
+import { site } from '../../../site'
+
+const projects = await getProjects()
+---
+
+<ProjectLayout title={`Projects | ${site.name}`} description="Things I build, and why.">
+	<a slot="nav" href="/">{site.name}</a>
+	<ProjectTitle slot="title">Projects</ProjectTitle>
+	<p slot="intro">Things I build, and why I build them. Each one has notes on the thinking behind it.</p>
+
+	<ProjectGrid projects={projects} />
+</ProjectLayout>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Shelf prototype</title>
+<style>
+	:root {
+		--bg: #fbfaf7; --panel: #ffffff; --ink: #1d1c1a; --muted: #77726a; --line: #e8e4dc;
+		--accent: #2f6b4f; --accent-soft: #e5f0ea; --chip: #f1eee8;
+		color-scheme: light dark;
+		font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root { --bg: #161615; --panel: #1e1d1c; --ink: #f0eee9; --muted: #9a958c; --line: #2d2c2a; --accent: #7fc7a1; --accent-soft: #23332b; --chip: #262523; }
+	}
+	* { box-sizing: border-box; }
+	html, body { margin: 0; height: 100%; }
+	body { background: var(--bg); color: var(--ink); display: grid; grid-template-columns: minmax(0, 1fr); -webkit-font-smoothing: antialiased; }
+	@media (min-width: 760px) { body { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); } }
+	button { font: inherit; color: inherit; cursor: pointer; }
+
+	.list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--panel); }
+	header { padding: 18px 18px 10px; display: flex; flex-direction: column; gap: 12px; }
+	.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+	h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+	.count { color: var(--muted); font-size: 13px; }
+	.all { border: 0; background: var(--accent); color: var(--panel); border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; }
+	.all:disabled { opacity: 0.5; cursor: default; }
+	.chips { display: flex; gap: 6px; }
+	.chip { border: 0; background: var(--chip); border-radius: 999px; padding: 5px 11px; font-size: 13px; color: var(--muted); }
+	.chip[aria-pressed=true] { background: var(--ink); color: var(--panel); }
+	ul { list-style: none; margin: 0; padding: 4px 8px 16px; overflow: auto; flex: 1; }
+	li > button { width: 100%; text-align: left; border: 0; background: none; border-radius: 12px; padding: 12px 10px; display: flex; flex-direction: column; gap: 4px; }
+	li > button:hover { background: var(--chip); }
+	li > button[aria-current=true] { background: var(--accent-soft); }
+	.src { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+	.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+	.read .dot { visibility: hidden; }
+	.title { font-weight: 600; letter-spacing: -0.01em; }
+	.sum { display: block; font-size: 13.5px; color: var(--muted); margin: 2px 0 0; padding-left: 10px; border-left: 2px solid var(--accent); }
+	.sum .line { display: block; margin: 2px 0; }
+	.pending { display: block; color: var(--accent); font-size: 12.5px; }
+
+	.reader { display: none; overflow: auto; padding: 40px clamp(24px, 6vw, 72px); }
+	@media (min-width: 760px) { .reader { display: block; } }
+	.reader .src { font-size: 13px; }
+	.reader h2 { font-size: clamp(24px, 3vw, 34px); letter-spacing: -0.025em; line-height: 1.15; margin: 10px 0 24px; max-width: 22ch; }
+	.card { background: var(--accent-soft); border-radius: 16px; padding: 18px 20px; max-width: 560px; }
+	.card h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+	.card ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+	.body { max-width: 560px; color: var(--muted); margin-top: 28px; }
+	.body p { margin: 0 0 14px; }
+	.bar { height: 10px; border-radius: 5px; background: var(--chip); margin: 0 0 10px; }
+	.actions { display: flex; gap: 8px; margin: 24px 0 0; }
+	.ghost { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 14px; font-size: 13px; }
+	.cursor::after { content: "▍"; color: var(--accent); animation: blink 1s steps(1) infinite; }
+	@keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<section class="list" aria-label="Saved articles">
+	<header>
+		<div class="top">
+			<div><h1>Shelf</h1><div class="count" id="count"></div></div>
+			<button class="all" id="all">Summarize all</button>
+		</div>
+		<div class="chips" role="group" aria-label="Filter">
+			<button class="chip" aria-pressed="true" data-f="all">All</button>
+			<button class="chip" aria-pressed="false" data-f="unread">Unread</button>
+			<button class="chip" aria-pressed="false" data-f="done">Summarized</button>
+		</div>
+	</header>
+	<ul id="items"></ul>
+</section>
+<main class="reader" id="reader" aria-live="polite"></main>
+<script>
+	const items = [
+		{ src: 'Field Notes', min: 14, title: 'Why every city should map its shade', sum: ['Heat deaths cluster where trees are missing, not where it is hottest.', 'A shade map costs less than one cooling centre.', 'Three cities already plan street work around theirs.'] },
+		{ src: 'The Long Build', min: 22, title: 'The quiet return of the boring database', sum: ['Teams are moving back to one Postgres after years of many stores.', 'The win is fewer moving parts, not raw speed.', 'Extensions now cover most of what the extra stores did.'] },
+		{ src: 'Margins', min: 9, title: 'Reading on paper still beats the screen for long text', sum: ['Studies keep finding better recall on paper for texts over 1,000 words.', 'The gap shrinks when screens show progress and page position.', 'Scrolling, not the screen itself, seems to be the problem.'] },
+		{ src: 'Cartography Weekly', min: 17, title: 'How a ferry timetable became a design classic', sum: ['A 1970s timetable put every crossing on one folded sheet.', 'Its grid made gaps in service obvious at a glance.', 'Transit apps still borrow its layout today.'] },
+		{ src: 'Small Software', min: 11, title: 'Make the app you would pay for, then charge for it', sum: ['Tiny apps survive on a few thousand paying fans, not millions of users.', 'Pricing early filters for people who care.', 'Support load stays low when the scope stays small.'] },
+		{ src: 'Weekend Science', min: 26, title: 'What sourdough starters teach us about microbiomes', sum: ['Starters from the same flour diverge by kitchen within weeks.', 'The baker’s hands add many of the defining microbes.', 'Stable communities resist new arrivals, like a healthy gut.'] },
+	].map((it, i) => ({ ...it, id: i, read: i > 3, state: 'none', shown: 0 }))
+
+	let filter = 'all', current = 0, busy = 0
+	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+	const $ = (id) => document.getElementById(id)
+	const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
+
+	function visible() {
+		return items.filter((it) => filter === 'all' || (filter === 'unread' ? !it.read : it.state === 'done'))
+	}
+
+	function summaryHtml(it) {
+		if (it.state === 'none') return ''
+		if (it.state === 'wait') return '<span class="pending">Reading the article…</span>'
+		const lines = it.sum.slice(0, Math.ceil(it.shown))
+		return '<span class="sum">' + lines.map((l, i) => {
+			const last = i === lines.length - 1 && it.state === 'typing'
+			const text = last ? l.slice(0, Math.floor((it.shown % 1 || 1) * l.length)) : l
+			return '<span class="line' + (last ? ' cursor' : '') + '">' + esc(text) + '</span>'
+		}).join('') + '</span>'
+	}
+
+	function render() {
+		const done = items.filter((it) => it.state === 'done').length
+		$('count').textContent = items.length + ' saved · ' + done + ' summarized'
+		$('all').disabled = done === items.length || busy > 0
+		$('items').innerHTML = visible().map((it) =>
+			'<li class="' + (it.read ? 'read' : '') + '"><button data-id="' + it.id + '" aria-current="' + (it.id === current) + '">' +
+			'<span class="src"><span class="dot"></span>' + esc(it.src) + ' · ' + it.min + ' min</span>' +
+			'<span class="title">' + esc(it.title) + '</span><span data-sum="' + it.id + '">' + summaryHtml(it) + '</span></button></li>').join('') ||
+			'<li class="count" style="padding:12px 10px">Nothing here.</li>'
+		const it = items[current]
+		$('reader').innerHTML =
+			'<div class="src">' + esc(it.src) + ' · ' + it.min + ' min read</div><h2>' + esc(it.title) + '</h2>' +
+			(it.state === 'done'
+				? '<div class="card"><h3>In three lines</h3><ol>' + it.sum.map((l) => '<li>' + esc(l) + '</li>').join('') + '</ol></div>'
+				: '<div class="card"><h3>In three lines</h3><div class="pending">' + (it.state === 'none' ? 'Not summarized yet.' : 'Summarizing…') + '</div></div>') +
+			'<div class="actions"><button class="ghost" data-act="sum">' + (it.state === 'done' ? 'Summarized' : 'Summarize') + '</button><button class="ghost" data-act="read">' + (it.read ? 'Mark unread' : 'Mark read') + '</button></div>' +
+			'<div class="body"><div class="bar" style="width:92%"></div><div class="bar" style="width:86%"></div><div class="bar" style="width:95%"></div><div class="bar" style="width:60%"></div><br><div class="bar" style="width:90%"></div><div class="bar" style="width:82%"></div><div class="bar" style="width:70%"></div></div>'
+	}
+
+	function summarize(it) {
+		if (it.state !== 'none') return
+		busy++; it.state = 'wait'; render()
+		setTimeout(() => {
+			it.state = 'typing'
+			const step = () => {
+				it.shown += reduced ? 3 : 0.06
+				if (it.shown >= 3) { it.shown = 3; it.state = 'done'; busy--; render(); return }
+				const slot = document.querySelector('[data-sum="' + it.id + '"]')
+				if (slot) slot.innerHTML = summaryHtml(it)
+				requestAnimationFrame(step)
+			}
+			render(); step()
+		}, reduced ? 0 : 500 + Math.random() * 400)
+	}
+
+	$('items').addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-id]'); if (!b) return
+		current = +b.dataset.id; items[current].read = true; summarize(items[current]); render()
+	})
+	$('reader').addEventListener('click', (e) => {
+		const b = e.target.closest('button[data-act]'); if (!b) return
+		const it = items[current]
+		if (b.dataset.act === 'sum') summarize(it)
+		else { it.read = !it.read; render() }
+	})
+	$('all').addEventListener('click', () => items.forEach((it, i) => setTimeout(() => summarize(it), i * 250)))
+	document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => {
+		filter = c.dataset.f
+		document.querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', String(o === c)))
+		render()
+	}))
+	items[0].state = 'done'; items[0].shown = 3; items[0].read = true
+	render()
+</script>
+</body>
+</html>

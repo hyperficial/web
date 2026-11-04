@@ -1,0 +1,3 @@
+# Keep the whole site out of search results, for pages and for files alike
+/*
+  X-Robots-Tag: noindex, nofollow

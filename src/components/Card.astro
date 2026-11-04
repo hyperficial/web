@@ -1,0 +1,8 @@
+---
+/** A raised surface for grouped content, such as the contact form. */
+const { class: className = '' } = Astro.props
+---
+
+<div class:list={['rounded-2xl border border-line bg-card p-5 md:p-6', className]}>
+	<slot />
+</div>

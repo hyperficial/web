@@ -1,0 +1,57 @@
+---
+interface Props {
+	label: string
+	name: string
+	type?: 'text' | 'email' | 'textarea'
+	autocomplete?: string
+	rows?: number
+	required?: boolean
+}
+
+const { label, name, type = 'text', autocomplete, rows = 3, required = true } = Astro.props
+const id = `field-${name}`
+const control = [
+	'w-full resize-none rounded-xl border border-field bg-ink/5',
+	'px-4 py-3 text-base text-ink transition-colors duration-150',
+	'focus:border-brand',
+	'aria-invalid:border-danger aria-invalid:ring-1 aria-invalid:ring-danger aria-invalid:focus:border-danger',
+].join(' ')
+---
+
+<!--
+	The error sits on the same line as the label, right aligned and never wrapping,
+	so showing or hiding it can't change the height of the form or move anything.
+-->
+<div class="flex flex-col gap-1.5" data-field>
+	<div class="flex items-baseline justify-between gap-4">
+		<label for={id} class="eyebrow shrink-0">{label}</label>
+		<span
+			id={`${id}-error`}
+			data-error
+			role="status"
+			class="eyebrow min-w-0 truncate text-right tracking-[0.12em] text-danger"
+		></span>
+	</div>
+	{
+		type === 'textarea' ? (
+			<textarea
+				id={id}
+				name={name}
+				rows={rows}
+				required={required}
+				aria-describedby={`${id}-error`}
+				class={control}
+			/>
+		) : (
+			<input
+				id={id}
+				name={name}
+				type={type}
+				autocomplete={autocomplete}
+				required={required}
+				aria-describedby={`${id}-error`}
+				class={control}
+			/>
+		)
+	}
+</div>

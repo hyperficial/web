@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import { widthsFor } from './widths'
+
+/**
+ * An image with an optional caption. Pass an imported image (optimized) or a URL from public/.
+ *
+ *   import shot from './shot.png'
+ *   <Figure src={shot} alt="..." caption="..." wide />
+ */
+interface Props {
+	src: ImageMetadata | string
+	alt: string
+	caption?: string
+	/** Break out of the text column to the full page width */
+	wide?: boolean
+	/** Draw a hairline border, for screenshots with a light edge */
+	frame?: boolean
+	class?: string
+}
+
+const { src, alt, caption, wide = false, frame = true, class: className = '' } = Astro.props
+const imgClass = ['block h-auto w-full rounded-xl', frame && 'border border-line']
+---
+
+<figure class:list={['not-prose my-10 flex flex-col gap-3', wide && 'figure-wide', className]}>
+	{
+		typeof src === 'string' ? (
+			<img src={src} alt={alt} loading="lazy" decoding="async" class:list={imgClass} />
+		) : (
+			<Image
+				src={src}
+				alt={alt}
+				widths={widthsFor(src.width, [640, 960, 1280, 1920])}
+				sizes={wide ? '(min-width: 64rem) 64rem, 100vw' : '(min-width: 48rem) 44rem, 100vw'}
+				class:list={imgClass}
+			/>
+		)
+	}
+	{caption && <figcaption class="text-sm text-muted">{caption}</figcaption>}
+</figure>

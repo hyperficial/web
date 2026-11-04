@@ -1,0 +1,23 @@
+---
+/**
+ * A side note in the project write-up: a decision, a dead end, a lesson.
+ *
+ *   <Note title="What I would do differently">...</Note>
+ */
+interface Props {
+	title?: string
+	tone?: 'note' | 'brand'
+}
+
+const { title, tone = 'note' } = Astro.props
+---
+
+<aside
+	class:list={[
+		'my-8 rounded-2xl border p-5 md:p-6 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
+		tone === 'brand' ? 'border-brand bg-brand text-on-brand [--muted:var(--on-brand)] [&_a]:text-on-brand' : 'border-line bg-card',
+	]}
+>
+	{title && <p class="eyebrow !mb-3">{title}</p>}
+	<slot />
+</aside>

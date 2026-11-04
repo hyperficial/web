@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+	<style>
+		:root { --tile: #2f4fd6; --mark: #fbfbff; }
+		@media (prefers-color-scheme: dark) { :root { --tile: #c9432e; --mark: #fff8f5; } }
+	</style>
+	<rect width="64" height="64" rx="14" fill="var(--tile)" />
+	<!-- A pixel "B" built from 6 unit square cells, like the dither background -->
+	<g fill="var(--mark)">
+		<rect x="17" y="11" width="24" height="6" /><rect x="17" y="17" width="6" height="12" /><rect x="41" y="17" width="6" height="6" />
+		<rect x="17" y="23" width="24" height="6" /><rect x="41" y="29" width="6" height="12" />
+		<rect x="17" y="29" width="6" height="12" /><rect x="17" y="41" width="24" height="6" /><rect x="41" y="35" width="6" height="6" />
+	</g>
+</svg>

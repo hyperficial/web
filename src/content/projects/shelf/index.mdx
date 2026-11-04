@@ -1,0 +1,97 @@
+---
+title: Shelf
+summary: A calm read-later app that turns every saved article into three lines, so the queue is something you can skim instead of something you avoid.
+why: My read-later list had become a guilt list. I didn't need more time to read. I needed to know which five articles were worth it.
+date: 2026-09-14
+status: building
+role: Design, iOS and web
+stack: [SwiftUI, TypeScript, Cloudflare Workers]
+cover: ./desktop-light.jpg
+coverAlt: The Shelf app on a wide screen. A list of saved articles on the left, each with a three line summary, and the selected article on the right.
+links:
+  - label: Open the prototype
+    href: /projects/shelf/prototype.html
+featured: true
+demo: true
+---
+
+import desktopDark from './desktop-dark.jpg'
+import phoneTyping from './phone-typing.jpg'
+import phoneSummarized from './phone-summarized.jpg'
+import phoneDark from './phone-dark.jpg'
+
+Read-later apps are good at saving. They are bad at the part after that. The list grows by a few articles a day and shrinks by maybe one a week. After a month it stops being a reading list and turns into an archive of good intentions.
+
+Shelf keeps the save button and changes what you see when you come back: each article as three short lines, written to help you decide, not to replace the article.
+
+## The problem
+
+I looked at a month of my own saves. Most of the articles I never opened weren't bad. I just couldn't tell, from a headline and a domain, whether one was worth twenty minutes. So I opened none of them.
+
+What I wanted was the thing a friend gives you when they send a link: *"read this, it's about X, the good part is Y."*
+
+> The goal is a faster no, and a more confident yes.
+
+## Try it
+
+This is the working prototype I used to test the idea. It has six real-looking articles with summaries written ahead of time. Click an article to summarize it, or press **Summarize all**.
+
+<Artifact src="/projects/shelf/prototype.html" title="Shelf prototype" caption="A single HTML file, no build step. On narrow screens it shows only the list, like the phone app." />
+
+<Note title="A dead end first">
+The first version showed a one-paragraph summary. People read the paragraph and then skipped the article, which is the opposite of the goal. Three separate lines are easier to scan and clearly not the whole story.
+</Note>
+
+## Design
+
+Every screen is the list. There is no inbox, no tags and no folders to sort into. A summary appears where the article already is, so nothing moves while you read.
+
+<Gallery
+	columns={3}
+	aspect="1 / 2"
+	images={[
+		{ src: phoneTyping, alt: 'Shelf on a phone. One article shows the words Reading the article, in green.', caption: 'While the summary is written, the row says so.' },
+		{ src: phoneSummarized, alt: 'Shelf on a phone, filtered to summarized articles, each with three lines.', caption: 'The Summarized filter is the real reading list.' },
+		{ src: phoneDark, alt: 'Shelf on a phone in dark mode, every article summarized.', caption: 'Dark mode keeps the same green, lighter.' },
+	]}
+/>
+
+On a wide screen the list stays on the left and the selected article opens beside it, with its three lines at the top in a soft green card.
+
+<Figure src={desktopDark} alt="Shelf on a wide screen in dark mode, with an article open on the right." caption="The reader shows the summary first and the article below it." wide />
+
+## The three lines
+
+The summaries carry the whole product, so they have firm rules:
+
+1. **Three lines, always.** Never two, never four. Same shape every time, so the list reads like a table.
+2. **Each line is a claim.** No *"the article discusses"*. If a line could be the start of any article, it gets rewritten.
+3. **The last line is the reason to read it.** The most surprising or most useful point goes last, because that is where the eye stops.
+
+The prompt asks for these rules and a small check rejects any summary that breaks them, for example too many lines or a line that starts with *"This article"*. A rejected summary is generated again, once.
+
+```ts
+const generic = /^(this|the) article/i
+
+const ok = (lines: string[]) =>
+	lines.length === 3 &&
+	lines.every((l) => l.length < 110 && !generic.test(l))
+```
+
+## Summarize all
+
+Summaries are made when you look, not when you save. That keeps the cost proportional to reading, and lets old saves catch up in one tap.
+
+<Video src="/projects/shelf/summarize-all.mp4" poster="/projects/shelf/summarize-all.jpg" title="Pressing Summarize all fills in every article, one after another" caption="Summarize all, in real time." clip wide aspect="1200 / 750" />
+
+## What's next
+
+- A share extension, so saving from any app takes one tap.
+- A weekly view: the five articles with the strongest last line.
+- Offline reading, with the article text stored next to its summary.
+
+<Note title="What I would do differently" tone="brand">
+I spent the first week on sync and accounts. I should have shipped the HTML prototype to five friends on day one. Their first question was about the summaries, not about sync.
+</Note>
+
+<Why label="Outcome" id="outcome" text="The list is short enough to read again. Most days I open two articles, and I know why before I start." />

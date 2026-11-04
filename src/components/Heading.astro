@@ -1,0 +1,12 @@
+---
+/** The display heading. Brand-panel name, uppercase, tightly set. */
+interface Props {
+	/** Use a non-h1 element for specimens and secondary uses */
+	as?: 'h1' | 'h2' | 'p'
+	class?: string
+}
+
+const { as: Tag = 'h1', class: className = '' } = Astro.props
+---
+
+<Tag class:list={['text-display', className]}><slot /></Tag>

@@ -1,0 +1,75 @@
+---
+import { Image } from 'astro:assets'
+import { formatYear, projectHref, type Project } from '../../projects'
+import StatusBadge from './StatusBadge.astro'
+import DemoBadge from './DemoBadge.astro'
+
+/**
+ * A project in the list. The whole card is one link (the title link stretches over it).
+ * `featured` lays it out wide with the image beside the text.
+ */
+interface Props {
+	project: Project
+	featured?: boolean
+	headingLevel?: 'h2' | 'h3'
+	/** Where the card links to. Defaults to the project page. */
+	href?: string
+}
+
+const { project, featured = false, headingLevel: H = 'h2', href = projectHref(project) } = Astro.props
+const { title, summary, date, status, cover, coverAlt, stack, demo } = project.data
+---
+
+<article
+	class:list={[
+		'group relative flex w-full flex-col overflow-hidden rounded-2xl border border-line bg-card transition-[border-color,box-shadow] duration-200 ease-out-soft',
+		'focus-within:border-brand hover:border-line-strong hover:shadow-[0_12px_40px_-20px_rgb(0_0_0/0.45)]',
+		featured && 'md:grid md:grid-cols-[1.4fr_1fr]',
+	]}
+>
+	<div
+		class:list={[
+			'relative aspect-[16/10] overflow-hidden border-b border-line bg-brand',
+			featured && 'md:order-1 md:aspect-auto md:min-h-80 md:border-b-0 md:border-l',
+		]}
+	>
+		{
+			cover ? (
+				<Image
+					src={cover}
+					alt={coverAlt ?? ''}
+					widths={[480, 800, 1200, 1600]}
+					sizes={featured ? '(min-width: 64rem) 36rem, 100vw' : '(min-width: 48rem) 30rem, 100vw'}
+					class="absolute inset-0 size-full object-cover object-left-top transition-transform duration-500 ease-out-soft group-hover:scale-[1.02]"
+				/>
+			) : (
+				<div class="absolute inset-0 flex items-end bg-[radial-gradient(circle_at_1px_1px,var(--on-brand)_1px,transparent_0)] bg-[length:6px_6px] p-5 text-on-brand/90" aria-hidden="true">
+					<span class="font-display text-6xl leading-none font-extrabold uppercase">{title.slice(0, 1)}</span>
+				</div>
+			)
+		}
+	</div>
+
+	<div class="flex flex-1 flex-col gap-3 p-5 md:p-6">
+		<div class="flex items-center justify-between gap-3 text-muted">
+			<time class="eyebrow" datetime={date.toISOString().slice(0, 10)}>{formatYear(date)}</time>
+			<span class="flex items-center gap-1.5">
+				{demo && <DemoBadge />}
+				<StatusBadge status={status} />
+			</span>
+		</div>
+		<H class:list={['font-semibold tracking-tight text-balance', featured ? 'text-3xl md:text-4xl' : 'text-2xl']}>
+			<a href={href} class="after:absolute after:inset-0 focus-visible:outline-none">{title}</a>
+		</H>
+		<p class="text-muted text-pretty">{summary}</p>
+		{
+			stack.length > 0 && (
+				<ul class="mt-auto flex flex-wrap gap-1.5 pt-2" aria-label="Stack">
+					{stack.slice(0, 4).map((s) => (
+						<li class="rounded-md border border-line px-2 py-1 font-mono text-xs text-muted">{s}</li>
+					))}
+				</ul>
+			)
+		}
+	</div>
+</article>

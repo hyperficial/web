@@ -1,0 +1,71 @@
+---
+import type { Project } from '../../projects'
+import { formatDate } from '../../projects'
+import StatusBadge from './StatusBadge.astro'
+
+/** The facts of a project as a definition list: status, date, role, stack and links. */
+interface Props {
+	project: Project
+	class?: string
+}
+
+const { project, class: className = '' } = Astro.props
+const { status, date, role, stack, links } = project.data
+const external = (href: string) => /^https?:\/\//.test(href)
+---
+
+<dl class:list={['grid grid-cols-2 gap-x-8 gap-y-6 text-sm md:grid-cols-[repeat(auto-fit,minmax(8rem,1fr))]', className]}>
+	<div class="flex flex-col gap-2">
+		<dt class="eyebrow">Status</dt>
+		<dd><StatusBadge status={status} /></dd>
+	</div>
+	<div class="flex flex-col gap-2">
+		<dt class="eyebrow">Date</dt>
+		<dd><time datetime={date.toISOString().slice(0, 10)}>{formatDate(date)}</time></dd>
+	</div>
+	{
+		role && (
+			<div class="flex flex-col gap-2">
+				<dt class="eyebrow">Role</dt>
+				<dd>{role}</dd>
+			</div>
+		)
+	}
+	{
+		stack.length > 0 && (
+			<div class="col-span-2 flex flex-col gap-2 md:col-span-1">
+				<dt class="eyebrow">Stack</dt>
+				<dd>
+					<ul class="flex flex-wrap gap-1.5">
+						{stack.map((s) => (
+							<li class="rounded-md bg-card px-2 py-1 font-mono text-xs">{s}</li>
+						))}
+					</ul>
+				</dd>
+			</div>
+		)
+	}
+	{
+		links.length > 0 && (
+			<div class="col-span-2 flex flex-col gap-2 md:col-span-1">
+				<dt class="eyebrow">Links</dt>
+				<dd>
+					<ul class="flex flex-col gap-1">
+						{links.map((l) => (
+							<li>
+								<a
+									href={l.href}
+									class="font-medium underline decoration-line-strong underline-offset-4 hover:decoration-brand"
+									{...(external(l.href) ? { target: '_blank', rel: 'noopener' } : {})}
+								>
+									{l.label}
+									{external(l.href) && <span aria-hidden="true">↗</span>}
+								</a>
+							</li>
+						))}
+					</ul>
+				</dd>
+			</div>
+		)
+	}
+</dl>

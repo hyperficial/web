@@ -1,0 +1,58 @@
+---
+import { controlClass } from './controls'
+---
+
+<!-- aria-pressed is true while dark mode is on. Both icons are in the markup, CSS shows the right one. -->
+<button type="button" class:list={[controlClass, 'theme-toggle']} aria-pressed="false" title="Dark mode">
+	<svg class="icon-moon" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor">
+		<path d="M17.3 12.4A7.5 7.5 0 0 1 7.6 2.7a.6.6 0 0 0-.8-.7 8.2 8.2 0 1 0 11.2 11.2.6.6 0 0 0-.7-.8Z"></path>
+	</svg>
+	<svg class="icon-sun" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+		<circle cx="10" cy="10" r="3.4"></circle>
+		<path d="M10 2.2v1.6M10 16.2v1.6M2.2 10h1.6M16.2 10h1.6M4.5 4.5l1.1 1.1M14.4 14.4l1.1 1.1M15.5 4.5l-1.1 1.1M5.6 14.4l-1.1 1.1"></path>
+	</svg>
+	<span class="sr-only">Dark mode</span>
+</button>
+
+<style>
+	.theme-toggle svg {
+		width: 1.125rem;
+		height: 1.125rem;
+		flex: none;
+	}
+	/* Dark on: show the moon. Dark off: show the sun. */
+	.theme-toggle[aria-pressed='true'] .icon-sun,
+	.theme-toggle[aria-pressed='false'] .icon-moon {
+		display: none;
+	}
+</style>
+
+<script>
+	const root = document.documentElement
+	const dark = matchMedia('(prefers-color-scheme: dark)')
+
+	function isDark() {
+		const chosen = root.dataset.theme
+		return chosen ? chosen === 'dark' : dark.matches
+	}
+
+	function sync() {
+		document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((b) => {
+			b.setAttribute('aria-pressed', String(isDark()))
+		})
+	}
+
+	document.querySelectorAll<HTMLButtonElement>('.theme-toggle').forEach((button) => {
+		button.addEventListener('click', () => {
+			const next = isDark() ? 'light' : 'dark'
+			root.dataset.theme = next
+			try {
+				localStorage.setItem('theme', next)
+			} catch {}
+			sync()
+		})
+	})
+
+	dark.addEventListener('change', sync)
+	sync()
+</script>

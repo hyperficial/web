@@ -1,0 +1,55 @@
+---
+import Base from '../layouts/Base.astro'
+import Eyebrow from '../components/Eyebrow.astro'
+import Button from '../components/Button.astro'
+import { site } from '../site'
+
+const sections = [
+	{
+		title: 'Other third parties',
+		body: 'There are no advertising trackers, and fonts are served from this site. The only third-party script is the spam check described below, and it loads only if you start using the contact form.',
+	},
+	{
+		title: 'The contact form',
+		body: `When you select Send, your name, email address and message are sent to a small function on this site, which emails them to my inbox. If that fails, your email app opens with a draft addressed to ${site.email} instead.`,
+	},
+	{
+		title: 'Spam check',
+		body: 'When you start using the contact form, the page loads Cloudflare Turnstile, a service that checks you are a person and not a bot. Cloudflare may process your IP address and browser signals for this. I do not see that data. The form also limits how often one visitor can send a message, which uses your IP address briefly and keeps no record of it.',
+	},
+	{
+		title: 'If you email me',
+		body: 'I receive your name, email address and message, and I use them only to reply to you. I delete them when the conversation is done, unless you ask me to keep them.',
+	},
+	{
+		title: 'Hosting',
+		body: 'Like any web host, the provider serving this site may keep standard server logs, such as your IP address and the time of your visit, for security and operation. I do not have access to a profile of you.',
+	},
+	{
+		title: 'Your rights',
+		body: `You can ask me what I hold about you, and ask me to correct or delete it, by emailing ${site.email}.`,
+	},
+]
+---
+
+<Base title="Privacy">
+	<main id="main" class="mx-auto flex min-h-svh max-w-2xl flex-col gap-12 p-pad py-20">
+		<header class="flex flex-col gap-4">
+			<Eyebrow>Privacy</Eyebrow>
+		<h1 class="font-display text-3xl font-bold tracking-tight md:text-4xl">How this site handles your information.</h1>
+		</header>
+
+		<div class="flex flex-col gap-8 border-t border-line pt-8">
+			{
+				sections.map((s) => (
+					<section class="flex flex-col gap-2">
+						<h2 class="font-semibold">{s.title}</h2>
+						<p class="text-lead text-muted">{s.body}</p>
+					</section>
+				))
+			}
+		</div>
+
+		<div><Button href="/">Back home</Button></div>
+	</main>
+</Base>

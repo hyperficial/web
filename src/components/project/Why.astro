@@ -1,0 +1,23 @@
+---
+import Eyebrow from '../Eyebrow.astro'
+
+/**
+ * The big why of a project, set large. Pass `text`, or put richer markup in the slot.
+ */
+interface Props {
+	text?: string
+	label?: string
+	/** Id of the label, change it when a page has more than one */
+	id?: string
+	class?: string
+}
+
+const { text, label = 'Why', id = 'why', class: className = '' } = Astro.props
+---
+
+<section aria-labelledby={id} class:list={['why not-prose flex flex-col gap-5 border-l-4 border-brand pl-5 md:pl-8', className]}>
+	<Eyebrow as="h2" id={id} class="text-brand">{label}</Eyebrow>
+	<p class="text-[clamp(1.6rem,3.6vw,2.75rem)] leading-[1.15] font-semibold tracking-[-0.025em] text-balance">
+		{text}<slot />
+	</p>
+</section>

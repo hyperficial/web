@@ -1,0 +1,28 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bsurrey",
+	"compatibility_date": "2026-11-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": { "enabled": true },
+
+	// Lets the Worker send the contact form message as an email.
+	"send_email": [{ "name": "EMAIL" }],
+
+	// Rate limit for the contact form: 3 messages per minute per visitor (per Cloudflare location).
+	// namespace_id is any integer that is unique within your Cloudflare account.
+	"ratelimits": [
+		{
+			"name": "CONTACT_LIMIT",
+			"namespace_id": "48202",
+			"simple": { "limit": 3, "period": 60 },
+		},
+	],
+
+	// Public settings. Secrets are NOT stored here, set them with wrangler secret put:
+	//   CONTACT_TO        the inbox that receives the messages
+	//   TURNSTILE_SECRET  the secret key of your Turnstile widget
+	"vars": {
+		"CONTACT_FROM": "website@bsurrey.com",
+		"CONTACT_ORIGIN": "https://bsurrey.com",
+	},
+}

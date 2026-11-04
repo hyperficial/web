@@ -1,0 +1,76 @@
+---
+title: Dither study
+summary: An example project that shows every building block of a project page. Replace it with a real one.
+why: I wanted a background that feels alive and printed at the same time, without shipping a video or a heavy library.
+demo: true
+date: 2026-10-01
+status: shipped
+role: Design and code
+stack: [WebGL, GLSL, Astro]
+cover: ../../../assets/specimens/dither-light.png
+coverAlt: A field of blue pixels, denser in the middle where the pointer is.
+links:
+  - label: See it on the home page
+    href: /
+featured: false
+---
+
+import light from '../../../assets/specimens/dither-light.png'
+import dark from '../../../assets/specimens/dither-dark.png'
+
+This is an **example project**. It exists so the preview shows every part of a project page. Copy this folder to start a new one, or delete it when the first real project is in.
+
+Everything above this text comes from the frontmatter: the title, the summary, the big why, the facts and the cover. Everything from here on is the write-up, written in MDX. Plain Markdown works, and so do these components, with no import needed: `Figure`, `Gallery`, `Video`, `Artifact`, `Note` and `Why`.
+
+## The problem
+
+Animated backgrounds usually mean a video file or a canvas library. Both are heavy for a page that is mostly text. An ordered dither needs one small shader and two colors.
+
+> The constraint was the point: two colors, one shader, no assets.
+
+## Try it
+
+An artifact is any self-contained HTML file in `public/`, usually `public/projects/<slug>/`. This one lives in `public/specimens/` because the design page uses it too. It runs in a sandboxed frame, follows the site's light or dark choice, and can be opened on its own.
+
+<Artifact src="/specimens/dither-playground.html" title="Dither playground" caption="Move the pointer over the pattern. The sliders change the cell size, the Bayer matrix and the radius." />
+
+For heavy artifacts, `load="click"` waits until the visitor presses Run:
+
+<Artifact src="/specimens/dither-playground.html" title="Dither playground, click to run" load="click" poster="/specimens/dither-clip.jpg" />
+
+## Video
+
+A short silent `clip` plays only while it is on screen and pauses with the site's motion toggle. Without `clip` you get a normal player with controls. YouTube and Vimeo work with `youtube="id"` or `vimeo="id"`.
+
+<Video src="/specimens/dither-clip.mp4" poster="/specimens/dither-clip.jpg" title="The playground following the pointer" caption="A five second clip, 220 KB." clip wide />
+
+## Images
+
+<Figure src={dark} alt="The same pattern in the dark color scheme, in red." caption="A single figure. Imported images are resized and converted at build time." />
+
+<Gallery
+	images={[
+		{ src: light, alt: 'The dither in the light color scheme, in blue.', caption: 'Light' },
+		{ src: dark, alt: 'The dither in the dark color scheme, in red.', caption: 'Dark' },
+	]}
+/>
+
+<Note title="What I would do differently">
+Notes are for decisions, dead ends and lessons. They can hold any Markdown, like a [link](/) or a list.
+</Note>
+
+## How it works
+
+1. Every cell compares a smooth noise value to a threshold from a Bayer matrix.
+2. Above the threshold it gets the deep color, below it the base color.
+3. The two colors are CSS tokens, so dark mode is free.
+
+```glsl
+gl_FragColor = vec4(v > bayer(c) ? hi : lo, 1.);
+```
+
+<Note title="Big statements" tone="brand">
+A second `Why` can sit anywhere in the write-up, for example to close with the outcome.
+</Note>
+
+<Why label="Outcome" id="outcome" text="One shader, about 2 KB, and it runs everywhere WebGL does." />

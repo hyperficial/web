@@ -1,0 +1,53 @@
+---
+import { controlClass } from './controls'
+---
+
+<!-- aria-pressed is true while the animation is paused -->
+<button type="button" class:list={[controlClass, 'motion-toggle']} aria-pressed="false" title="Pause animation">
+	<svg class="icon-pause" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor">
+		<rect x="4.5" y="3.5" width="3.6" height="13" rx="1"></rect>
+		<rect x="11.9" y="3.5" width="3.6" height="13" rx="1"></rect>
+	</svg>
+	<svg class="icon-play" viewBox="0 0 20 20" aria-hidden="true" fill="currentColor">
+		<path d="M6 3.6a.8.8 0 0 1 1.2-.7l9 6.4a.8.8 0 0 1 0 1.4l-9 6.4A.8.8 0 0 1 6 16.4V3.6Z"></path>
+	</svg>
+	<span class="sr-only">Pause animation</span>
+</button>
+
+<style>
+	.motion-toggle svg {
+		width: 1.125rem;
+		height: 1.125rem;
+		flex: none;
+	}
+	/* Paused: show play. Running: show pause. */
+	.motion-toggle[aria-pressed='true'] .icon-pause,
+	.motion-toggle[aria-pressed='false'] .icon-play {
+		display: none;
+	}
+</style>
+
+<script>
+	const root = document.documentElement
+
+	function sync() {
+		const paused = root.dataset.motion === 'paused'
+		document.querySelectorAll<HTMLButtonElement>('.motion-toggle').forEach((b) => {
+			b.setAttribute('aria-pressed', String(paused))
+		})
+	}
+
+	document.querySelectorAll<HTMLButtonElement>('.motion-toggle').forEach((button) => {
+		button.addEventListener('click', () => {
+			const next = root.dataset.motion === 'paused' ? 'running' : 'paused'
+			root.dataset.motion = next
+			try {
+				localStorage.setItem('motion', next)
+			} catch {}
+			document.dispatchEvent(new CustomEvent('motionchange'))
+			sync()
+		})
+	})
+
+	sync()
+</script>

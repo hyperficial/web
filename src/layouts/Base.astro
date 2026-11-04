@@ -1,0 +1,47 @@
+---
+import '../styles/global.css'
+
+interface Props {
+	title: string
+	description?: string
+	index?: boolean
+}
+
+const { title, description, index = false } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="color-scheme" content="light dark" />
+		<meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#121110" media="(prefers-color-scheme: dark)" />
+		{description && <meta name="description" content={description} />}
+		{!index && <meta name="robots" content="noindex, nofollow" />}
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<!-- Runs before first paint so there is no flash: saved theme and motion choice -->
+		<script is:inline>
+			;(function () {
+				var root = document.documentElement
+				var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+				try {
+					var theme = localStorage.getItem('theme')
+					if (theme === 'light' || theme === 'dark') root.dataset.theme = theme
+					var motion = localStorage.getItem('motion')
+					root.dataset.motion = motion === 'paused' || motion === 'running' ? motion : reduced ? 'paused' : 'running'
+				} catch (e) {
+					root.dataset.motion = reduced ? 'paused' : 'running'
+				}
+			})()
+		</script>
+		<title>{title}</title>
+	</head>
+	<body class="min-h-svh">
+		<slot />
+	</body>
+</html>

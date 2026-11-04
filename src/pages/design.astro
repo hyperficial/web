@@ -1,0 +1,282 @@
+---
+import Base from '../layouts/Base.astro'
+import Button from '../components/Button.astro'
+import ContactForm from '../components/ContactForm.astro'
+import DitherCanvas from '../components/DitherCanvas.astro'
+import Eyebrow from '../components/Eyebrow.astro'
+import Field from '../components/Field.astro'
+import Heading from '../components/Heading.astro'
+import { Code } from 'astro:components'
+import Artifact from '../components/project/Artifact.astro'
+import Figure from '../components/project/Figure.astro'
+import Gallery from '../components/project/Gallery.astro'
+import Note from '../components/project/Note.astro'
+import ProjectGrid from '../components/project/ProjectGrid.astro'
+import ProjectMeta from '../components/project/ProjectMeta.astro'
+import ProjectTitle from '../components/project/ProjectTitle.astro'
+import StatusBadge from '../components/project/StatusBadge.astro'
+import DemoBadge from '../components/project/DemoBadge.astro'
+import Video from '../components/project/Video.astro'
+import Why from '../components/project/Why.astro'
+import { projectsBase, type Project } from '../projects'
+import ditherLight from '../assets/specimens/dither-light.png'
+import ditherDark from '../assets/specimens/dither-dark.png'
+
+const colors = [
+	{ name: 'surface', cls: 'bg-surface', use: 'Page and calm panel background' },
+	{ name: 'ink', cls: 'bg-ink', use: 'Primary text' },
+	{ name: 'muted', cls: 'bg-muted', use: 'Secondary text, captions' },
+	{ name: 'brand', cls: 'bg-brand', use: 'Brand panel, buttons, focus, selection' },
+	{ name: 'brand-deep', cls: 'bg-brand-deep', use: 'Second tone of the dither' },
+	{ name: 'on-brand', cls: 'bg-on-brand', use: 'Text on brand' },
+]
+
+/** Stand-in projects for the specimens, so this page never depends on real content. */
+const specimen = (id: string, data: Partial<Project['data']> & Pick<Project['data'], 'title' | 'summary' | 'why'>) =>
+	({
+		id,
+		collection: 'projects',
+		data: { date: new Date('2026-10-01'), status: 'building', stack: [], links: [], featured: false, demo: false, draft: false, ...data },
+	}) as unknown as Project
+
+const specimens = [
+	specimen('featured', {
+		title: 'Featured project',
+		summary: 'A featured card takes a full row and sets the cover beside the text.',
+		why: 'To give the most important work more room.',
+		status: 'shipped',
+		role: 'Design and code',
+		stack: ['Swift', 'SwiftUI', 'CloudKit'],
+		cover: ditherLight,
+		coverAlt: 'A blue dither pattern.',
+		links: [
+			{ label: 'Home page', href: '/' },
+			{ label: 'Astro docs', href: 'https://docs.astro.build' },
+		],
+		featured: true,
+	}),
+	specimen('with-cover', {
+		title: 'With a cover',
+		summary: 'A regular card with a cover image and up to four stack items.',
+		why: '',
+		cover: ditherDark,
+		coverAlt: 'A red dither pattern.',
+		stack: ['TypeScript', 'Workers', 'D1'],
+	}),
+	specimen('no-cover', {
+		title: 'No cover',
+		demo: true,
+		summary: 'Without a cover the card shows a dotted brand tile with the first letter. This one is also marked as a demo.',
+		why: '',
+		status: 'idea',
+		date: new Date('2025-05-01'),
+	}),
+]
+
+const label = 'font-mono text-sm text-muted'
+---
+
+<Base title="Design system">
+	<main id="main" class="mx-auto flex max-w-4xl flex-col gap-20 p-pad py-20">
+		<header class="flex flex-col gap-4">
+			<h1 class="eyebrow">Design system</h1>
+			<p class="text-lead max-w-xl">
+				Tokens live in <code class="font-mono text-sm">src/styles/global.css</code>. Components use only these, and
+				every color switches with the system color scheme.
+			</p>
+		</header>
+
+		<section class="flex flex-col gap-6">
+			<Eyebrow as="h2">Color</Eyebrow>
+			<ul class="grid grid-cols-2 gap-4 md:grid-cols-3">
+				{
+					colors.map((c) => (
+						<li class="flex flex-col gap-2">
+							<div class={`h-20 border border-line ${c.cls}`} />
+							<p class="font-mono text-sm">{c.name}</p>
+							<p class="text-sm text-muted">{c.use}</p>
+						</li>
+					))
+				}
+			</ul>
+		</section>
+
+		<section class="flex flex-col gap-6">
+			<Eyebrow as="h2">Type</Eyebrow>
+			<div class="flex flex-col gap-8 border-t border-line pt-6">
+				<div class="flex flex-col gap-2">
+					<p class="font-mono text-sm text-muted">text-display (Inter 800, uppercase)</p>
+					<div class="bg-brand p-6 text-on-brand"><Heading as="p">Display</Heading></div>
+				</div>
+				<div class="flex flex-col gap-2">
+					<p class="font-mono text-sm text-muted">text-lead (Inter)</p>
+					<p class="text-lead max-w-md">Body copy that stays easy to read a year later.</p>
+				</div>
+				<div class="flex flex-col gap-2">
+					<p class="font-mono text-sm text-muted">eyebrow (Geist Mono)</p>
+					<Eyebrow>Software engineer</Eyebrow>
+				</div>
+			</div>
+		</section>
+
+		<section class="flex flex-col gap-6">
+			<Eyebrow as="h2">Spacing</Eyebrow>
+			<div class="border-t border-line pt-6">
+				<p class="font-mono text-sm text-muted">p-pad is clamp(1.5rem, 4vw, 4rem), the one outer gutter for every panel</p>
+				<div class="mt-4 inline-block bg-line"><div class="bg-surface p-pad font-mono text-sm">p-pad</div></div>
+			</div>
+		</section>
+
+		<section class="flex flex-col gap-6">
+			<Eyebrow as="h2">Components</Eyebrow>
+			<div class="grid gap-10 border-t border-line pt-6 md:grid-cols-2">
+				<div class="flex flex-col gap-4">
+					<p class="font-mono text-sm text-muted">Button</p>
+					<div><Button>Send</Button></div>
+					<p class="mt-4 font-mono text-sm text-muted">Field</p>
+					<Field label="Name" name="demo-name" required={false} />
+					<Field label="Message" name="demo-message" type="textarea" required={false} />
+				</div>
+				<div class="flex flex-col gap-4">
+					<p class="font-mono text-sm text-muted">DitherCanvas</p>
+					<div class="relative h-56 overflow-hidden bg-brand"><DitherCanvas /></div>
+					<p class="mt-4 font-mono text-sm text-muted">ContactForm</p>
+					<ContactForm email="contact@example.com" />
+				</div>
+			</div>
+		</section>
+		<section class="flex flex-col gap-6">
+			<Eyebrow as="h2">Project components</Eyebrow>
+			<p class="text-lead max-w-xl">
+				Used by the project pages at <a class="underline underline-offset-4" href={projectsBase}>{projectsBase}</a>.
+				They live in <code class="font-mono text-sm">src/components/project</code>. The media components work in
+				every project's MDX without an import.
+			</p>
+
+			<div class="flex flex-col gap-16 border-t border-line pt-6">
+				<div class="flex flex-col gap-4">
+					<p class={label}>ProjectLayout header with ProjectTitle</p>
+					<div class="relative isolate overflow-hidden bg-brand p-6 text-on-brand md:p-10">
+						<div class="absolute inset-0 -z-10" aria-hidden="true"><DitherCanvas /></div>
+						<div class="flex flex-col items-start gap-6">
+							<p class="eyebrow [--muted:var(--on-brand)]"><span aria-hidden="true">←</span> Projects</p>
+							<ProjectTitle as="p">Project title</ProjectTitle>
+							<p class="text-lead max-w-xl font-medium">The summary, one or two lines under the title.</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-4">
+					<p class={label}>StatusBadge</p>
+					<div class="flex flex-wrap gap-3">
+						<StatusBadge status="idea" />
+						<StatusBadge status="building" />
+						<StatusBadge status="shipped" />
+						<StatusBadge status="archived" />
+					</div>
+					<p class={label}>DemoBadge, for made up projects (demo: true)</p>
+					<div class="flex flex-wrap gap-3"><DemoBadge /></div>
+				</div>
+
+				<div class="flex flex-col gap-4">
+					<p class={label}>Why</p>
+					<Why id="why-specimen" text="The reason the project exists, set large so it is the first thing people read." />
+				</div>
+
+				<div class="flex flex-col gap-4">
+					<p class={label}>ProjectMeta</p>
+					<ProjectMeta project={specimens[0]} class="border-y border-line py-6" />
+				</div>
+
+				<div class="flex flex-col gap-4">
+					<p class={label}>ProjectGrid and ProjectCard: featured, with a cover, without a cover</p>
+					<ProjectGrid projects={specimens} headingLevel="h3" hrefFor={() => projectsBase} />
+				</div>
+
+				<div class="flex flex-col gap-4">
+					<p class={label}>Prose, for Markdown and MDX write-ups</p>
+					<div class="prose rounded-2xl border border-line p-6 md:p-10">
+						<h2>A section heading</h2>
+						<p>
+							Body text at a comfortable measure, with a <a href={projectsBase}>link</a>,
+							some <strong>strong text</strong> and <code>inline code</code>.
+						</p>
+						<h3>A smaller heading</h3>
+						<ul>
+							<li>An unordered list</li>
+							<li>With a second item</li>
+						</ul>
+						<ol>
+							<li>An ordered list</li>
+							<li>With a second item</li>
+						</ol>
+						<blockquote><p>A quote, for the line worth remembering.</p></blockquote>
+						<h4>A label heading</h4>
+						<Code
+							code={`gl_FragColor = vec4(v > bayer(c) ? hi : lo, 1.);`}
+							lang="glsl"
+							themes={{ light: 'github-light', dark: 'github-dark' }}
+							defaultColor={false}
+						/>
+						<table>
+							<thead><tr><th>Table</th><th>Value</th></tr></thead>
+							<tbody><tr><td>Shader size</td><td>2 KB</td></tr><tr><td>Colors</td><td>2</td></tr></tbody>
+						</table>
+					</div>
+				</div>
+
+				<div class="grid gap-10 md:grid-cols-2">
+					<div class="flex flex-col">
+						<p class={label}>Figure</p>
+						<Figure src={ditherDark} alt="A red dither pattern." caption="A caption under the image." class="mt-4 mb-0" />
+					</div>
+					<div class="flex flex-col">
+						<p class={label}>Video, as a clip</p>
+						<div class="mt-4 [&>figure]:my-0">
+							<Video
+								src="/specimens/dither-clip.mp4"
+								poster="/specimens/dither-clip.jpg"
+								title="The dither playground following the pointer"
+								caption="Plays on screen, pauses with the motion toggle."
+								clip
+								aspect="8 / 5"
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex flex-col [&>figure]:my-0 [&>figure]:mt-4">
+					<p class={label}>Gallery</p>
+					<Gallery
+						images={[
+							{ src: ditherLight, alt: 'A blue dither pattern.', caption: 'Light' },
+							{ src: ditherDark, alt: 'A red dither pattern.', caption: 'Dark' },
+						]}
+						columns={3}
+					/>
+				</div>
+
+				<div class="flex flex-col [&>figure]:my-0 [&>figure]:mt-4">
+					<p class={label}>Artifact, loads when near the screen</p>
+					<Artifact src="/specimens/dither-playground.html" title="Dither playground" caption="A sandboxed HTML file. Move the pointer over it." />
+				</div>
+
+				<div class="flex flex-col [&>figure]:my-0 [&>figure]:mt-4">
+					<p class={label}>Artifact, load="click"</p>
+					<Artifact src="/specimens/dither-playground.html" title="Dither playground" load="click" poster="/specimens/dither-clip.jpg" />
+				</div>
+
+				<div class="grid gap-6 md:grid-cols-2 [&_aside]:my-0">
+					<div class="flex flex-col gap-4">
+						<p class={label}>Note</p>
+						<Note title="What I would do differently"><p>A side note for a decision, a dead end or a lesson.</p></Note>
+					</div>
+					<div class="flex flex-col gap-4">
+						<p class={label}>Note, tone="brand"</p>
+						<Note title="Outcome" tone="brand"><p>The brand tone, for the one note that should stand out.</p></Note>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+</Base>

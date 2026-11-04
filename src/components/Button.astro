@@ -1,0 +1,32 @@
+---
+interface Props {
+	/** Renders a link instead of a button when set */
+	href?: string
+	/** solid is black on light, white on dark. inverse is for use on the brand color. */
+	variant?: 'solid' | 'inverse'
+	type?: 'button' | 'submit'
+	class?: string
+}
+
+const { href, variant = 'solid', type = 'button', class: className = '' } = Astro.props
+const classes = [
+	'inline-block cursor-pointer rounded-xl px-6 py-3.5 text-center text-base font-semibold',
+	variant === 'inverse'
+		? 'bg-on-brand text-brand focus-visible:outline-on-brand'
+		: 'bg-ink text-surface hover:bg-brand hover:text-on-brand',
+	'transition-opacity duration-150 ease-out-soft hover:opacity-90 active:opacity-80 md:py-3',
+	className,
+]
+---
+
+{
+	href ? (
+		<a href={href} class:list={classes}>
+			<slot />
+		</a>
+	) : (
+		<button type={type} class:list={classes}>
+			<slot />
+		</button>
+	)
+}

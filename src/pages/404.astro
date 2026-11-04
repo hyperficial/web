@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro'
+import HeaderLayout from '../components/HeaderLayout.astro'
+import DitherCanvas from '../components/DitherCanvas.astro'
+import Heading from '../components/Heading.astro'
+import Eyebrow from '../components/Eyebrow.astro'
+import Button from '../components/Button.astro'
+---
+
+<Base title="Page not found">
+	<HeaderLayout>
+		<DitherCanvas slot="backdrop" />
+		<Eyebrow slot="eyebrow">Not found</Eyebrow>
+		<Heading slot="title">404<span class="sr-only"> Page not found</span></Heading>
+
+		<Fragment slot="intro">
+			<p class="text-lead">There is nothing at this address. It may have moved, or it never existed.</p>
+			<div><Button href="/" variant="inverse">Back home</Button></div>
+		</Fragment>
+	</HeaderLayout>
+</Base>

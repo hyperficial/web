@@ -1,0 +1,91 @@
+---
+import type { ImageMetadata } from 'astro'
+
+/**
+ * A video: a file (from public/ or imported with ?url), or a YouTube or Vimeo embed.
+ *
+ *   <Video src="/projects/slug/demo.mp4" poster="/projects/slug/demo.jpg" title="Demo" />
+ *   <Video src="/projects/slug/loop.mp4" title="Loop" clip />   short silent loop, no controls
+ *   <Video youtube="dQw4w9WgXcQ" title="Talk" />
+ *
+ * A `clip` plays only while it is on screen and follows the site's motion setting.
+ * YouTube embeds use the privacy enhanced youtube-nocookie.com domain.
+ */
+interface Props {
+	title: string
+	src?: string
+	/** Extra sources, for example a webm next to the mp4 */
+	sources?: { src: string; type: string }[]
+	youtube?: string
+	vimeo?: string
+	poster?: ImageMetadata | string
+	caption?: string
+	/** Short silent loop without controls */
+	clip?: boolean
+	/** CSS aspect ratio */
+	aspect?: string
+	wide?: boolean
+}
+
+const { title, src, sources = [], youtube, vimeo, poster, caption, clip = false, aspect = '16 / 9', wide = false } = Astro.props
+const posterUrl = typeof poster === 'string' ? poster : poster?.src
+const embed = youtube
+	? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtube)}?rel=0`
+	: vimeo
+		? `https://player.vimeo.com/video/${encodeURIComponent(vimeo)}?dnt=1`
+		: undefined
+const typeOf = (url: string) => (url.endsWith('.webm') ? 'video/webm' : url.endsWith('.mov') ? 'video/quicktime' : 'video/mp4')
+---
+
+<figure class:list={['not-prose my-10 flex flex-col gap-3', wide && 'figure-wide']}>
+	<div class="overflow-hidden rounded-xl border border-line bg-card" style={`aspect-ratio: ${aspect}`}>
+		{
+			embed ? (
+				<iframe
+					src={embed}
+					title={title}
+					loading="lazy"
+					allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+					allowfullscreen
+					referrerpolicy="strict-origin-when-cross-origin"
+					class="block size-full"
+				/>
+			) : clip ? (
+				<video data-clip class="block size-full object-cover" muted loop playsinline preload="metadata" poster={posterUrl} aria-label={title}>
+					{sources.map((s) => <source src={s.src} type={s.type} />)}
+					{src && <source src={src} type={typeOf(src)} />}
+				</video>
+			) : (
+				<video class="block size-full object-contain" controls playsinline preload="metadata" poster={posterUrl} aria-label={title}>
+					{sources.map((s) => <source src={s.src} type={s.type} />)}
+					{src && <source src={src} type={typeOf(src)} />}
+				</video>
+			)
+		}
+	</div>
+	{caption && <figcaption class="text-sm text-muted">{caption}</figcaption>}
+</figure>
+
+<script>
+	// Clips play while on screen and the site motion setting is running
+	const clips = document.querySelectorAll<HTMLVideoElement>('video[data-clip]')
+	const visible = new WeakSet<HTMLVideoElement>()
+	const paused = () => document.documentElement.dataset.motion === 'paused'
+
+	function sync(v: HTMLVideoElement) {
+		if (visible.has(v) && !paused()) v.play().catch(() => {})
+		else v.pause()
+	}
+
+	const io = new IntersectionObserver((entries) => {
+		for (const e of entries) {
+			const v = e.target as HTMLVideoElement
+			if (e.isIntersecting) visible.add(v)
+			else visible.delete(v)
+			sync(v)
+		}
+	})
+
+	clips.forEach((v) => io.observe(v))
+	document.addEventListener('motionchange', () => clips.forEach(sync))
+</script>

@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro'
+import HeaderLayout from '../components/HeaderLayout.astro'
+import DitherCanvas from '../components/DitherCanvas.astro'
+import Heading from '../components/Heading.astro'
+import Eyebrow from '../components/Eyebrow.astro'
+import ContactForm from '../components/ContactForm.astro'
+import { site } from '../site'
+---
+
+<Base
+	title={`${site.name} | Software engineer`}
+	description="Benjamin Surrey is a software engineer building apps and services across platforms, from macOS and iOS to the web."
+>
+	<HeaderLayout>
+		<DitherCanvas slot="backdrop" />
+		<Eyebrow slot="eyebrow">Software engineer</Eyebrow>
+		<Heading slot="title">Benjamin Surrey</Heading>
+
+		<p slot="intro" class="text-lead font-medium md:text-xl md:leading-relaxed [text-shadow:0_1px_20px_rgb(0_0_0/0.3)]">
+			I build apps and services across platforms, from macOS and iOS to the web. AI is a big part of my work.
+		</p>
+
+		<Fragment slot="main">
+			<ContactForm email={site.email} />
+		</Fragment>
+	</HeaderLayout>
+</Base>

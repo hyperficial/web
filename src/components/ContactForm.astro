@@ -1,0 +1,511 @@
+---
+import Button from './Button.astro'
+import Field from './Field.astro'
+
+interface Props {
+	/** Address the visitor's mail app is opened to */
+	email: string
+}
+
+const { email } = Astro.props
+// Public key of the Turnstile widget, read at build time. The server holds the secret key.
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY
+---
+
+<form class="contact relative" data-to={email} data-sitekey={siteKey} aria-labelledby="contact-title" novalidate>
+	<!-- Everything the visitor fills in. Becomes inert and fades out once the message is sent. -->
+	<div class="fields flex flex-col gap-4" data-fields>
+		<div class="mb-2 flex flex-col gap-1.5">
+			<h2 id="contact-title" class="text-2xl font-semibold tracking-tight">Send a message</h2>
+			<p class="text-sm text-muted">All fields are required</p>
+		</div>
+
+		<div class="grid gap-4 md:grid-cols-2 md:gap-6">
+			<Field label="Name" name="name" autocomplete="name" />
+			<Field label="Email" name="email" type="email" autocomplete="email" />
+		</div>
+		<Field label="Message" name="message" type="textarea" />
+
+		<!-- Honeypot: hidden from people and from assistive tech, filled by bots -->
+		<div class="absolute -left-[9999px] size-px overflow-hidden opacity-0" aria-hidden="true" inert>
+			<input name="website" type="text" tabindex="-1" autocomplete="off" />
+		</div>
+
+		<!-- Turnstile bot check. Loaded only when the form is first used. Invisible unless Cloudflare needs a challenge. -->
+		<div class="turnstile empty:hidden"></div>
+
+		<!-- Privacy consent. Its error shows in the fixed height status line below. -->
+		<label class="mt-1 flex cursor-pointer items-start gap-3 text-sm leading-snug text-muted">
+			<input class="consent" type="checkbox" name="consent" required />
+			<span>
+				I agree that my name, email and message are used to reply to me. Read the{' '}
+				<a class="text-ink underline underline-offset-4 hover:text-brand" href="/privacy">privacy notice</a>.
+			</span>
+		</label>
+
+		<!-- Status on the left, Send at the bottom right. The status has a fixed height so it never shifts the form. -->
+		<div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-6">
+			<p class="note h-5 text-sm text-muted md:flex-1" role="status" aria-live="polite"></p>
+			<Button type="submit" class="submit md:px-10">
+				<span class="state state-idle">Send message</span>
+				<span class="state state-sending" aria-hidden="true">
+					<svg class="spinner" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+						<circle cx="10" cy="10" r="7.5" opacity="0.25"></circle>
+						<path d="M10 2.5a7.5 7.5 0 0 1 7.5 7.5"></path>
+					</svg>
+					Sending
+				</span>
+				<span class="state state-done" aria-hidden="true">
+					<svg class="tick-small" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M4.5 10.5l3.6 3.6 7.4-8.2"></path>
+					</svg>
+					Sent
+				</span>
+			</Button>
+		</div>
+	</div>
+
+	<!-- Shown after a successful send. Sits over the form, so the card keeps its height. -->
+	<div class="success" data-success>
+		<svg class="success-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+			<circle class="ring" cx="32" cy="32" r="28"></circle>
+			<path class="tick" d="M19 33l9 9 17-19"></path>
+		</svg>
+		<p class="success-title" tabindex="-1" data-success-title>Sent.</p>
+		<p class="success-text">Thank you, I will reply soon.</p>
+		<button type="button" class="again" data-again>Send another message</button>
+	</div>
+</form>
+
+<style>
+	.consent {
+		appearance: none;
+		flex: none;
+		/* 24px, the WCAG 2.2 minimum target size */
+		width: 1.5rem;
+		height: 1.5rem;
+		margin-top: -0.1rem;
+		border: 1px solid color-mix(in srgb, var(--ink) 55%, var(--surface));
+		border-radius: 0.4rem;
+		background: transparent no-repeat center / 1rem;
+		cursor: pointer;
+		transition:
+			background-color 150ms,
+			border-color 150ms;
+	}
+	.consent:checked {
+		border-color: var(--brand);
+		background-color: var(--brand);
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8'/%3E%3C/svg%3E");
+	}
+	.consent[aria-invalid='true'] {
+		border-color: var(--danger);
+	}
+</style>
+
+<style is:global>
+	/* ---- Send button: idle, sending, sent. The three labels share one grid cell, so the button never changes size. ---- */
+	.contact .submit {
+		display: inline-grid;
+		position: relative;
+		overflow: hidden;
+		transition:
+			background-color 200ms,
+			color 200ms,
+			transform 120ms,
+			opacity 150ms;
+	}
+	.contact .submit:active:not(:disabled) {
+		transform: scale(0.97);
+	}
+	.contact .submit:disabled {
+		cursor: progress;
+	}
+	.contact .submit .state {
+		grid-area: 1 / 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		transition:
+			opacity 250ms,
+			transform 350ms var(--ease-out-soft);
+	}
+	.contact .submit .state-sending,
+	.contact .submit .state-done {
+		opacity: 0;
+		transform: translateY(0.75rem);
+	}
+	.contact .submit svg {
+		width: 1.1rem;
+		height: 1.1rem;
+		flex: none;
+	}
+	.contact .submit[data-state='sending'] .state-idle,
+	.contact .submit[data-state='success'] .state-idle {
+		opacity: 0;
+		transform: translateY(-0.75rem);
+	}
+	.contact .submit[data-state='sending'] .state-sending,
+	.contact .submit[data-state='success'] .state-done {
+		opacity: 1;
+		transform: none;
+	}
+	.contact .submit[data-state='success'] {
+		background-color: var(--brand);
+		color: var(--on-brand);
+	}
+	.contact .spinner {
+		animation: contact-spin 0.8s linear infinite;
+	}
+	.contact .tick-small path {
+		stroke-dasharray: 20;
+		stroke-dashoffset: 20;
+	}
+	.contact .submit[data-state='success'] .tick-small path {
+		animation: contact-draw 0.45s 0.15s var(--ease-out-soft) forwards;
+	}
+
+	/* ---- Success panel ---- */
+	.contact .fields {
+		transition:
+			opacity 300ms,
+			visibility 0s;
+	}
+	.contact[data-sent] .fields {
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 300ms,
+			visibility 0s 300ms;
+	}
+	.contact .success {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		text-align: center;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition:
+			opacity 400ms,
+			visibility 0s 400ms;
+	}
+	.contact[data-sent] .success {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transition:
+			opacity 400ms 150ms,
+			visibility 0s;
+	}
+	.contact .success-icon {
+		width: 5rem;
+		height: 5rem;
+		margin-bottom: 0.75rem;
+		color: var(--brand);
+	}
+	.contact .success-icon .ring {
+		stroke-dasharray: 176;
+		stroke-dashoffset: 176;
+	}
+	.contact .success-icon .tick {
+		stroke-dasharray: 44;
+		stroke-dashoffset: 44;
+	}
+	.contact[data-sent] .success-icon .ring {
+		animation: contact-draw-ring 0.7s 0.2s var(--ease-out-soft) forwards;
+	}
+	.contact[data-sent] .success-icon .tick {
+		animation: contact-draw-tick 0.45s 0.7s var(--ease-out-soft) forwards;
+	}
+	.contact .success-title,
+	.contact .success-text,
+	.contact .again {
+		opacity: 0;
+		transform: translateY(0.6rem);
+	}
+	.contact[data-sent] .success-title {
+		animation: contact-rise 0.5s 0.5s var(--ease-out-soft) forwards;
+	}
+	.contact[data-sent] .success-text {
+		animation: contact-rise 0.5s 0.65s var(--ease-out-soft) forwards;
+	}
+	.contact[data-sent] .again {
+		animation: contact-rise 0.5s 0.9s var(--ease-out-soft) forwards;
+	}
+	.contact .success-title {
+		font-size: clamp(2.25rem, 5vw, 3.25rem);
+		font-weight: 700;
+		letter-spacing: -0.025em;
+		line-height: 1;
+		outline: none;
+	}
+	.contact .success-text {
+		font-size: clamp(1.125rem, 2vw, 1.375rem);
+		color: var(--muted);
+	}
+	.contact .again {
+		margin-top: 1.25rem;
+		padding: 0.5rem 0.25rem;
+		font-size: 0.95rem;
+		color: var(--ink);
+		text-decoration: underline;
+		text-underline-offset: 0.3em;
+		cursor: pointer;
+	}
+	.contact .again:hover {
+		color: var(--brand);
+	}
+
+	@keyframes contact-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	@keyframes contact-draw {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	@keyframes contact-draw-ring {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	@keyframes contact-draw-tick {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	@keyframes contact-rise {
+		to {
+			opacity: 1;
+			transform: none;
+		}
+	}
+</style>
+
+<script>
+	// Posts to /api/contact (a Cloudflare Worker that emails the message). If that fails, falls back to the visitor's mail app.
+	// A Turnstile token is required. The script is loaded on first use, so visitors who never touch the form never contact Cloudflare.
+	type TurnstileApi = {
+		render: (el: HTMLElement, options: Record<string, unknown>) => string
+		reset: (id?: string) => void
+	}
+	const turnstileApi = () => (window as unknown as { turnstile?: TurnstileApi }).turnstile
+	type Control = HTMLInputElement | HTMLTextAreaElement
+
+	const rules: Record<string, (value: string) => string> = {
+		name: (v) => (v.length < 2 ? 'Enter your name' : ''),
+		email: (v) => (!v ? 'Enter your email' : /^\S+@\S+\.\S+$/.test(v) ? '' : 'Check your email'),
+		message: (v) => (v.length < 10 ? 'A little more, please' : ''),
+	}
+
+	function setInvalid(control: HTMLInputElement | HTMLTextAreaElement, invalid: boolean) {
+		if (invalid) control.setAttribute('aria-invalid', 'true')
+		else control.removeAttribute('aria-invalid')
+	}
+
+	function check(control: Control): boolean {
+		const slot = control.closest<HTMLElement>('[data-field]')!.querySelector<HTMLElement>('[data-error]')!
+		const message = rules[control.name]?.(control.value.trim()) ?? ''
+		slot.textContent = message
+		setInvalid(control, Boolean(message))
+		return !message
+	}
+
+	document.querySelectorAll<HTMLFormElement>('form.contact').forEach((form) => {
+		const note = form.querySelector<HTMLElement>('.note')!
+		const consent = form.querySelector<HTMLInputElement>('input[name=consent]')!
+		const controls = [...form.querySelectorAll<Control>('[data-field] input, [data-field] textarea')]
+
+		function checkConsent(): boolean {
+			setInvalid(consent, !consent.checked)
+			return consent.checked
+		}
+
+		for (const control of controls) {
+			// Validate once the person leaves the field, then keep it live while they fix it
+			control.addEventListener('blur', () => {
+				if (control.value || control.dataset.touched) check(control)
+				control.dataset.touched = '1'
+			})
+			control.addEventListener('input', () => {
+				if (control.dataset.touched) check(control)
+				note.textContent = ''
+			})
+		}
+		consent.addEventListener('change', () => {
+			checkConsent()
+			note.textContent = ''
+		})
+
+		// --- Turnstile (loaded lazily) ---
+		const widgetBox = form.querySelector<HTMLElement>('.turnstile')!
+		const siteKey = form.dataset.sitekey
+		let widgetId: string | undefined
+		let token = ''
+		let tokenWaiters: Array<(t: string) => void> = []
+		let scriptRequested = false
+
+		function setToken(t: string) {
+			token = t
+			if (t) tokenWaiters.splice(0).forEach((resolve) => resolve(t))
+		}
+
+		function startTurnstile() {
+			if (scriptRequested || !siteKey) return
+			scriptRequested = true
+			const render = () => {
+				const api = turnstileApi()
+				if (!api) return
+				widgetId = api.render(widgetBox, {
+					sitekey: siteKey,
+					appearance: 'interaction-only',
+					callback: (t: string) => setToken(t),
+					'expired-callback': () => setToken(''),
+					'error-callback': () => setToken(''),
+				})
+			}
+			if (turnstileApi()) return render()
+			const script = document.createElement('script')
+			script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+			script.async = true
+			script.onload = render
+			document.head.appendChild(script)
+		}
+
+		/** Resolves with a token, or '' if none arrives in time (script blocked, offline, challenge ignored) */
+		function waitForToken(ms = 15000): Promise<string> {
+			if (token) return Promise.resolve(token)
+			startTurnstile()
+			return new Promise((resolve) => {
+				const timer = setTimeout(() => resolve(''), ms)
+				tokenWaiters.push((t) => {
+					clearTimeout(timer)
+					resolve(t)
+				})
+			})
+		}
+
+		// Start loading as soon as someone starts filling in the form
+		form.addEventListener('focusin', startTurnstile, { once: true })
+
+		const submit = form.querySelector<HTMLButtonElement>('button[type=submit]')!
+		const fields = form.querySelector<HTMLElement>('[data-fields]')!
+		const successTitle = form.querySelector<HTMLElement>('[data-success-title]')!
+		const again = form.querySelector<HTMLButtonElement>('[data-again]')!
+		const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
+		let sending = false
+
+		/** idle, sending or success. CSS animates the button between them. */
+		const setState = (state: 'idle' | 'sending' | 'success') => (submit.dataset.state = state)
+
+		/** Swap the form for the "Sent." panel and move focus there so screen readers announce it */
+		function showSent() {
+			form.dataset.sent = ''
+			fields.inert = true
+			successTitle.focus({ preventScroll: true })
+			// Reset the button behind the panel, ready for the next message
+			setTimeout(() => {
+				submit.disabled = false
+				setState('idle')
+			}, 600)
+		}
+
+		again.addEventListener('click', () => {
+			delete form.dataset.sent
+			fields.inert = false
+			note.textContent = ''
+			controls[0]?.focus()
+		})
+
+		/** Last resort if the server can't send: open the visitor's mail app instead */
+		function openMailApp(name: string, email: string, message: string) {
+			const subject = encodeURIComponent(`Message from ${name}`)
+			const body = encodeURIComponent(`${message}\n\n${name}\n${email}`)
+			window.location.href = `mailto:${form.dataset.to}?subject=${subject}&body=${body}`
+		}
+
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault()
+			if (sending) return
+			const data = new FormData(form)
+
+			controls.forEach((c) => (c.dataset.touched = '1'))
+			const invalid = controls.filter((c) => !check(c))
+			if (invalid.length) {
+				invalid[0].focus()
+				return
+			}
+			if (!checkConsent()) {
+				note.textContent = 'Please accept the privacy notice to send.'
+				consent.focus()
+				return
+			}
+
+			const name = String(data.get('name')).trim()
+			const email = String(data.get('email')).trim()
+			const message = String(data.get('message')).trim()
+
+			sending = true
+			let succeeded = false
+			submit.disabled = true
+			setState('sending')
+			note.textContent = 'Checking that you are a person...'
+			try {
+				const turnstileToken = await waitForToken()
+				if (!turnstileToken) throw new Error('bot_check')
+				note.textContent = ''
+				const response = await fetch('/api/contact', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						name,
+						email,
+						message,
+						consent: true,
+						turnstileToken,
+						website: String(data.get('website') ?? ''),
+					}),
+				})
+				const result = await response.json().catch(() => ({ ok: false }))
+				if (response.status === 429) {
+					note.textContent = 'Too many messages. Please wait a minute.'
+					return
+				}
+				if (!response.ok || !result.ok) throw new Error(result.error ?? 'failed')
+
+				form.reset()
+				controls.forEach((c) => {
+					delete c.dataset.touched
+					setInvalid(c, false)
+				})
+				setInvalid(consent, false)
+				note.textContent = ''
+				succeeded = true
+				// Let the checkmark draw on the button, then bring in the full "Sent." panel
+				setState('success')
+				setTimeout(showSent, reduceMotion.matches ? 0 : 900)
+			} catch {
+				note.textContent = 'Could not send. Opening your email app.'
+				openMailApp(name, email, message)
+			} finally {
+				// A Turnstile token works once, so get a fresh one for the next attempt
+				setToken('')
+				if (widgetId) turnstileApi()?.reset(widgetId)
+				sending = false
+				// On success the button stays in its "Sent" state until the panel takes over (see showSent)
+				if (!succeeded) {
+					submit.disabled = false
+					setState('idle')
+				}
+			}
+		})
+	})
+</script>

@@ -1,0 +1,172 @@
+---
+/**
+ * Animated ordered dither background (WebGL). Fills its positioned parent.
+ * Colors are CSS values, so tokens and dark mode work automatically.
+ * Falls back to the parent's flat background when WebGL is unavailable.
+ */
+interface Props {
+	lo?: string
+	hi?: string
+	/** Size of one dither cell, in CSS pixels */
+	pixel?: number
+	class?: string
+}
+
+const {
+	lo = 'var(--brand)',
+	hi = 'var(--brand-deep)',
+	pixel = 2,
+	class: className = '',
+} = Astro.props
+---
+
+<canvas
+	data-dither
+	data-pixel={pixel}
+	style={`--dither-lo: ${lo}; --dither-hi: ${hi};`}
+	class:list={['absolute inset-0 block size-full [image-rendering:pixelated]', className]}
+	role="presentation"
+	aria-hidden="true"></canvas>
+
+<script>
+	const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}'
+	const FRAG = `
+precision mediump float;
+uniform vec2 res; uniform float t; uniform float px; uniform vec3 lo; uniform vec3 hi;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(17.3,9.1);a*=.5;}return v;}
+float bayer(vec2 c){float r=0.,s=1.;for(int i=0;i<3;i++){
+  float x=mod(floor(c.x/s),2.);float y=mod(floor(c.y/s),2.);
+  r=r*4.+mod(x+y,2.)*2.+y;s*=2.;}return r/64.;}
+void main(){
+  vec2 c=floor(gl_FragCoord.xy/px);
+  vec2 uv=c*px/res.y;
+  float tt=t*.04;
+  vec2 q=vec2(fbm(uv*2.+tt),fbm(uv*2.+vec2(5.2,1.3)-tt));
+  float v=smoothstep(.25,.8,fbm(uv*2.5+q*1.6+vec2(tt,-tt*.7)));
+  gl_FragColor=vec4(v>bayer(c)?hi:lo,1.);
+}`
+
+	const swatch = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+
+	/** Resolve any CSS color (hex, oklch, color-mix, ...) to 0..1 rgb. */
+	function rgb(css: string): [number, number, number] {
+		if (!swatch) return [0, 0, 0]
+		swatch.clearRect(0, 0, 1, 1)
+		swatch.fillStyle = '#000'
+		swatch.fillStyle = css
+		swatch.fillRect(0, 0, 1, 1)
+		const d = swatch.getImageData(0, 0, 1, 1).data
+		return [d[0] / 255, d[1] / 255, d[2] / 255]
+	}
+
+	function compile(gl: WebGLRenderingContext, type: number, src: string) {
+		const s = gl.createShader(type)!
+		gl.shaderSource(s, src)
+		gl.compileShader(s)
+		return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null
+	}
+
+	function start(canvas: HTMLCanvasElement) {
+		const gl = canvas.getContext('webgl', { antialias: false, alpha: false })
+		if (!gl) return
+
+		const vs = compile(gl, gl.VERTEX_SHADER, VERT)
+		const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG)
+		if (!vs || !fs) return
+		const prog = gl.createProgram()!
+		gl.attachShader(prog, vs)
+		gl.attachShader(prog, fs)
+		gl.linkProgram(prog)
+		if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return
+		gl.useProgram(prog)
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
+		const loc = gl.getAttribLocation(prog, 'p')
+		gl.enableVertexAttribArray(loc)
+		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
+
+		const u = (name: string) => gl.getUniformLocation(prog, name)
+		const uRes = u('res'), uT = u('t'), uPx = u('px'), uLo = u('lo'), uHi = u('hi')
+		const dark = matchMedia('(prefers-color-scheme: dark)')
+		const paused = () => document.documentElement.dataset.motion === 'paused'
+		// Start on a pleasant frame, so a paused page still looks designed
+		let elapsed = 12
+		let last = performance.now()
+		let raf = 0
+
+		function colors() {
+			const cs = getComputedStyle(canvas)
+			gl!.uniform3fv(uLo, rgb(cs.getPropertyValue('--dither-lo')))
+			gl!.uniform3fv(uHi, rgb(cs.getPropertyValue('--dither-hi')))
+			gl!.uniform1f(uPx, 1)
+		}
+
+		/**
+		 * One canvas pixel is one dither cell, scaled up with image-rendering: pixelated.
+		 * That keeps the chunky look and makes a full page height canvas cheap.
+		 */
+		function size() {
+			const cell = Number(canvas.dataset.pixel) || 2
+			const w = Math.max(1, Math.ceil(canvas.clientWidth / cell))
+			const h = Math.max(1, Math.ceil(canvas.clientHeight / cell))
+			if (canvas.width !== w || canvas.height !== h) {
+				canvas.width = w
+				canvas.height = h
+			}
+			gl!.viewport(0, 0, w, h)
+			gl!.uniform2f(uRes, w, h)
+		}
+
+		function draw() {
+			gl!.uniform1f(uT, elapsed)
+			gl!.drawArrays(gl!.TRIANGLES, 0, 3)
+		}
+
+		function loop(now: number) {
+			elapsed += (now - last) / 1000
+			last = now
+			draw()
+			raf = requestAnimationFrame(loop)
+		}
+
+		/** Animate unless paused or hidden. Pausing keeps the current frame on screen. */
+		function run() {
+			cancelAnimationFrame(raf)
+			raf = 0
+			if (!paused() && !document.hidden) {
+				last = performance.now()
+				raf = requestAnimationFrame(loop)
+			}
+		}
+
+		function recolor() {
+			colors()
+			draw()
+		}
+
+		colors()
+		size()
+		draw()
+		run()
+
+		// Resizing clears the buffer, so repaint in the same task to avoid a blank flash.
+		new ResizeObserver(() => {
+			size()
+			draw()
+		}).observe(canvas)
+		document.addEventListener('visibilitychange', run)
+		document.addEventListener('motionchange', run)
+		// Theme changes: the system setting, or the toggle setting html[data-theme]
+		dark.addEventListener('change', recolor)
+		new MutationObserver(recolor).observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ['data-theme'],
+		})
+	}
+
+	document.querySelectorAll<HTMLCanvasElement>('canvas[data-dither]').forEach(start)
+</script>

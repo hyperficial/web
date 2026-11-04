@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro'
+import DitherCanvas from '../../components/DitherCanvas.astro'
+import Eyebrow from '../../components/Eyebrow.astro'
+---
+
+<Base title="Benjamin Surrey">
+	<div class="fixed inset-0" aria-hidden="true">
+		<DitherCanvas lo="var(--surface)" hi="color-mix(in oklab, var(--surface) 82%, var(--brand))" />
+		<!-- Veil keeps the text legible over the pattern -->
+		<div
+			class="absolute inset-0"
+			style="background: radial-gradient(ellipse 60% 55% at 40% 50%, color-mix(in oklab, var(--surface) 92%, transparent), color-mix(in oklab, var(--surface) 60%, transparent) 70%, transparent);"
+		>
+		</div>
+	</div>
+
+	<main class="relative mx-auto flex min-h-svh max-w-3xl flex-col items-start justify-center gap-8 p-pad py-24">
+		<Eyebrow class="text-brand">Software engineer</Eyebrow>
+		<h1 class="font-display text-5xl leading-[0.95] font-extrabold tracking-tight sm:text-7xl">Benjamin Surrey</h1>
+		<p class="text-lead max-w-xl text-xl sm:text-2xl">
+			I build apps and services across platforms, from macOS and iOS to the web. AI is a big part of my work.
+		</p>
+	</main>
+</Base>

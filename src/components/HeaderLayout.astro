@@ -1,0 +1,95 @@
+---
+import Footer from './Footer.astro'
+import MotionToggle from './MotionToggle.astro'
+import ThemeToggle from './ThemeToggle.astro'
+
+/**
+ * Page with a tall brand hero and a frosted card that sits in the lower part of it.
+ * Everything between the skip link and the footer is one <main> landmark.
+ *
+ * The animated backdrop is one layer behind the hero that ends halfway down the
+ * card, so the card bridges the colored area and the plain page below it. The edge
+ * fades out softly over its last few rem.
+ *
+ * Hero, all at the top: eyebrow and controls on one row, the title, then the intro.
+ */
+const hasMain = Astro.slots.has('main')
+const hasBackdrop = Astro.slots.has('backdrop')
+
+---
+
+{
+	hasMain && (
+		<a
+			href="#contact"
+			class="sr-only rounded-xl bg-ink px-4 py-3 text-surface focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
+		>
+			Skip to the contact form
+		</a>
+	)
+}
+
+<div data-dither-root class="relative isolate flex min-h-svh flex-col [--hero-h:clamp(32rem,88svh,52rem)]">
+		<!-- Brand color and dither: from the top of the page down to the middle of the card (--dither-end, set below) -->
+		<div
+			class="absolute inset-x-0 top-0 -z-10 overflow-hidden bg-brand [mask-image:linear-gradient(to_bottom,#000_calc(100%-7rem),rgb(0_0_0/0.55)_calc(100%-3.5rem),transparent)]"
+			style="height: var(--dither-end, calc(var(--hero-h) + 4rem))"
+			aria-hidden="true"
+		>
+			<slot name="backdrop" />
+		</div>
+
+		<main id="main" class="flex-1">
+		<header class="px-pad text-on-brand">
+			<!-- Same max width as the card below, so everything shares a left edge -->
+			<div
+				class="mx-auto flex min-h-(--hero-h) w-full max-w-5xl flex-col items-start gap-6 pt-pad pb-56 md:gap-8"
+			>
+				<div class="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-3">
+					<div class="[&_.eyebrow]:text-on-brand">
+						<slot name="eyebrow" />
+					</div>
+					<div class="-mr-2 flex items-center gap-0.5">
+						{hasBackdrop && <MotionToggle />}
+						<ThemeToggle />
+					</div>
+				</div>
+				<slot name="title" />
+				<div class="flex max-w-xl flex-col gap-6 text-on-brand">
+					<slot name="intro" />
+				</div>
+			</div>
+		</header>
+
+		{
+			hasMain ? (
+				<div id="contact" class="relative -mt-44 scroll-mt-8 px-pad pb-24">
+					<div class="mx-auto max-w-5xl">
+						<div data-card class="flex flex-col gap-8 rounded-3xl border border-ink/15 bg-surface/95 p-6 text-ink shadow-[0_12px_48px_-16px_rgb(0_0_0/0.45)] [--muted:color-mix(in_srgb,var(--ink)_80%,transparent)] supports-[backdrop-filter]:bg-surface/88 supports-[backdrop-filter]:backdrop-blur-xl md:p-10">
+							<slot name="main" />
+						</div>
+					</div>
+				</div>
+			) : (
+				<div class="h-16 md:h-24" />
+			)
+		}
+		</main>
+
+		<Footer />
+	</div>
+
+<script>
+	// Measure where the middle of the card is and end the backdrop there
+	document.querySelectorAll<HTMLElement>('[data-dither-root]').forEach((root) => {
+		const card = root.querySelector<HTMLElement>('[data-card]')
+		if (!card) return
+		const update = () => {
+			const middle = card.getBoundingClientRect().top - root.getBoundingClientRect().top + card.offsetHeight / 2
+			root.style.setProperty('--dither-end', `${Math.round(middle)}px`)
+		}
+		update()
+		new ResizeObserver(update).observe(card)
+		new ResizeObserver(update).observe(root)
+	})
+</script>

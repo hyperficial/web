@@ -1,0 +1,12 @@
+---
+/** Small mono label. Renders a <p> by default, or a heading level via `as`. */
+interface Props {
+	as?: 'p' | 'span' | 'h2' | 'h3'
+	id?: string
+	class?: string
+}
+
+const { as: Tag = 'p', id, class: className = '' } = Astro.props
+---
+
+<Tag id={id} class:list={['eyebrow', className]}><slot /></Tag>

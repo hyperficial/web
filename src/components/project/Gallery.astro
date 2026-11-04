@@ -1,0 +1,44 @@
+---
+import { Image } from 'astro:assets'
+import type { ImageMetadata } from 'astro'
+import { widthsFor } from './widths'
+
+/**
+ * A grid of images, each with an optional caption. Click opens the full image.
+ *
+ *   <Gallery images={[{ src: a, alt: '...' }, { src: b, alt: '...', caption: '...' }]} />
+ */
+interface Props {
+	images: { src: ImageMetadata; alt: string; caption?: string }[]
+	columns?: 2 | 3
+	caption?: string
+	wide?: boolean
+	/** CSS aspect ratio of every tile, for example '1 / 2' for phone screenshots */
+	aspect?: string
+}
+
+const { images, columns = 2, caption, wide = true, aspect = '4 / 3' } = Astro.props
+---
+
+<figure class:list={['not-prose my-10 flex flex-col gap-3', wide && 'figure-wide']}>
+	<ul class:list={['grid gap-3 sm:grid-cols-2', columns === 3 && 'lg:grid-cols-3']}>
+		{
+			images.map((img) => (
+				<li class="flex flex-col gap-2">
+					<a href={img.src.src} class="block overflow-hidden rounded-xl border border-line" target="_blank" rel="noopener">
+						<Image
+							src={img.src}
+							alt={img.alt}
+							widths={widthsFor(img.src.width, [480, 800, 1200])}
+							sizes={columns === 3 ? '(min-width: 64rem) 22rem, (min-width: 40rem) 50vw, 100vw' : '(min-width: 40rem) 50vw, 100vw'}
+							style={`aspect-ratio: ${aspect}`}
+							class="block h-auto w-full object-cover object-top transition-transform duration-500 ease-out-soft hover:scale-[1.02]"
+						/>
+					</a>
+					{img.caption && <p class="text-sm text-muted">{img.caption}</p>}
+				</li>
+			))
+		}
+	</ul>
+	{caption && <figcaption class="text-sm text-muted">{caption}</figcaption>}
+</figure>

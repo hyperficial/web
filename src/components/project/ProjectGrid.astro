@@ -1,0 +1,28 @@
+---
+import type { Project } from '../../projects'
+import ProjectCard from './ProjectCard.astro'
+
+/** The list of projects. Featured projects take a full row. */
+interface Props {
+	projects: Project[]
+	headingLevel?: 'h2' | 'h3'
+	/** Where each card links to. Defaults to the project page. */
+	hrefFor?: (p: Project) => string
+}
+
+const { projects, headingLevel, hrefFor } = Astro.props
+---
+
+{
+	projects.length > 0 ? (
+		<ul class="grid gap-5 md:grid-cols-2 md:gap-6">
+			{projects.map((p) => (
+				<li class:list={['flex', p.data.featured && 'md:col-span-2']}>
+					<ProjectCard project={p} featured={p.data.featured} headingLevel={headingLevel} href={hrefFor?.(p)} />
+				</li>
+			))}
+		</ul>
+	) : (
+		<p class="text-muted">Nothing here yet.</p>
+	)
+}

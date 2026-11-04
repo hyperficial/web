@@ -1,0 +1,102 @@
+---
+import type { ImageMetadata } from 'astro'
+
+/**
+ * An interactive HTML artifact in a sandboxed frame, with a bar to open it on its own.
+ * Put the file in public/projects/<slug>/ and point `src` at it.
+ *
+ *   <Artifact src="/projects/slug/playground.html" title="Playground" />
+ *   <Artifact src="/projects/slug/heavy.html" title="Simulation" load="click" poster={still} />
+ *
+ * The frame follows the site's light or dark choice through prefers-color-scheme,
+ * so the artifact only needs its own @media (prefers-color-scheme: dark) styles.
+ * By default it may run scripts but has no access to this site (no allow-same-origin).
+ */
+interface Props {
+	src: string
+	title: string
+	caption?: string
+	/** CSS aspect ratio of the frame. Ignored when `height` is set. */
+	aspect?: string
+	/** Fixed CSS height, for artifacts that need a minimum size */
+	height?: string
+	/** lazy: loads when near the screen. click: waits for the visitor to press Run. */
+	load?: 'lazy' | 'click'
+	poster?: ImageMetadata | string
+	sandbox?: string
+	wide?: boolean
+}
+
+const {
+	src,
+	title,
+	caption,
+	aspect = '16 / 10',
+	height,
+	load = 'lazy',
+	poster,
+	sandbox = 'allow-scripts allow-pointer-lock allow-popups allow-downloads',
+	wide = true,
+} = Astro.props
+const posterUrl = typeof poster === 'string' ? poster : poster?.src
+const size = height ? `height: ${height}` : `aspect-ratio: ${aspect}`
+---
+
+<figure class:list={['not-prose my-10 flex flex-col gap-3', wide && 'figure-wide']} data-artifact>
+	<div class="overflow-hidden rounded-xl border border-line-strong bg-card">
+		<div class="flex items-center justify-between gap-3 border-b border-line px-3 py-2">
+			<p class="flex min-w-0 items-center gap-2 font-mono text-xs text-muted">
+				<span class="flex gap-1" aria-hidden="true">
+					<span class="size-2 rounded-full bg-line-strong"></span>
+					<span class="size-2 rounded-full bg-line-strong"></span>
+					<span class="size-2 rounded-full bg-line-strong"></span>
+				</span>
+				<span class="truncate">{title}</span>
+			</p>
+			<a
+				href={src}
+				target="_blank"
+				rel="noopener"
+				class="shrink-0 rounded-md px-2 py-1 font-mono text-xs text-muted transition-colors hover:bg-line hover:text-ink"
+			>
+				Open <span aria-hidden="true">↗</span><span class="sr-only"> {title} in a new tab</span>
+			</a>
+		</div>
+		<div class="relative bg-surface" style={size}>
+			{
+				load === 'click' ? (
+					<>
+						<iframe data-src={src} title={title} sandbox={sandbox} class="absolute inset-0 block size-full" hidden />
+						<div data-poster class="absolute inset-0 grid place-items-center bg-card">
+							{posterUrl && <img src={posterUrl} alt="" class="absolute inset-0 size-full object-cover opacity-60" />}
+							<button
+								type="button"
+								data-run
+								class="relative cursor-pointer rounded-xl bg-ink px-5 py-3 font-semibold text-surface transition-colors hover:bg-brand hover:text-on-brand"
+							>
+								Run <span class="sr-only">{title}</span>
+							</button>
+						</div>
+					</>
+				) : (
+					<iframe src={src} title={title} sandbox={sandbox} loading="lazy" class="absolute inset-0 block size-full" />
+				)
+			}
+		</div>
+	</div>
+	{caption && <figcaption class="text-sm text-muted">{caption}</figcaption>}
+</figure>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-artifact]').forEach((root) => {
+		const run = root.querySelector<HTMLButtonElement>('[data-run]')
+		const frame = root.querySelector<HTMLIFrameElement>('iframe[data-src]')
+		if (!run || !frame) return
+		run.addEventListener('click', () => {
+			frame.src = frame.dataset.src!
+			frame.hidden = false
+			root.querySelector('[data-poster]')?.remove()
+			frame.focus()
+		})
+	})
+</script>

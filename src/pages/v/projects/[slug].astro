@@ -1,0 +1,82 @@
+---
+import { Image } from 'astro:assets'
+import { render } from 'astro:content'
+import ProjectLayout from '../../../layouts/ProjectLayout.astro'
+import ProjectTitle from '../../../components/project/ProjectTitle.astro'
+import ProjectMeta from '../../../components/project/ProjectMeta.astro'
+import Why from '../../../components/project/Why.astro'
+import Figure from '../../../components/project/Figure.astro'
+import Gallery from '../../../components/project/Gallery.astro'
+import Video from '../../../components/project/Video.astro'
+import Artifact from '../../../components/project/Artifact.astro'
+import Note from '../../../components/project/Note.astro'
+import DemoBadge from '../../../components/project/DemoBadge.astro'
+import { widthsFor } from '../../../components/project/widths'
+import { getProjects, projectHref, projectsBase, type Project } from '../../../projects'
+import { site } from '../../../site'
+
+export async function getStaticPaths() {
+	const projects = await getProjects()
+	return projects.map((project, i) => ({
+		params: { slug: project.id },
+		props: { project, next: projects[(i + 1) % projects.length] },
+	}))
+}
+
+interface Props {
+	project: Project
+	next: Project
+}
+
+const { project, next } = Astro.props
+const { title, summary, why, cover, coverAlt, demo } = project.data
+const { Content } = await render(project)
+
+/** Available in every project's MDX without an import */
+const components = { Figure, Gallery, Video, Artifact, Note, Why }
+---
+
+<ProjectLayout title={`${demo ? 'Demo: ' : ''}${title} | ${site.name}`} description={summary}>
+	<span slot="nav" class="flex items-center gap-3">
+		<a href={projectsBase}><span aria-hidden="true">←</span> Projects</a>
+		{project.data.demo && <DemoBadge />}
+	</span>
+	<ProjectTitle slot="title">{title}</ProjectTitle>
+	<p slot="intro">{summary}</p>
+
+	<article class="flex flex-col gap-14 md:gap-20">
+		<Why text={why} class="max-w-4xl" />
+
+		<ProjectMeta project={project} class="border-y border-line py-6" />
+
+		{
+			cover && (
+				<Image
+					src={cover}
+					alt={coverAlt ?? ''}
+					widths={widthsFor(cover.width, [640, 960, 1280, 1920])}
+					sizes="(min-width: 64rem) 64rem, 100vw"
+					loading="eager"
+					class="block h-auto w-full rounded-2xl border border-line"
+				/>
+			)
+		}
+
+		<div class="prose">
+			<Content components={components} />
+		</div>
+	</article>
+
+	{
+		next.id !== project.id && (
+			<nav aria-label="Next project" class="mt-20 border-t border-line pt-8">
+				<a href={projectHref(next)} class="group flex flex-col gap-2">
+					<span class="eyebrow">Next project</span>
+					<span class="text-2xl font-semibold tracking-tight group-hover:underline group-hover:decoration-brand group-hover:underline-offset-4 md:text-3xl">
+						{next.data.title} <span aria-hidden="true">→</span>
+					</span>
+				</a>
+			</nav>
+		)
+	}
+</ProjectLayout>
