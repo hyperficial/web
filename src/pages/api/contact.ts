@@ -39,8 +39,7 @@ export const POST: APIRoute = async ({ request }) => {
 	// Only accept posts from this site (browsers always send Origin on a cross-site POST)
 	const origin = request.headers.get('origin')
 	if (origin) {
-		const allowed = new Set([env.CONTACT_ORIGIN, new URL(request.url).origin])
-		if (!allowed.has(origin)) return json({ ok: false, error: 'forbidden' }, 403)
+		if (origin !== new URL(request.url).origin) return json({ ok: false, error: 'forbidden' }, 403)
 	}
 
 	let data: Record<string, unknown>
@@ -88,7 +87,7 @@ export const POST: APIRoute = async ({ request }) => {
 	try {
 		const sent = await env.EMAIL.send({
 			to: env.CONTACT_TO,
-			from: { email: env.CONTACT_FROM, name: 'Website contact' },
+			from: { email: `website@${new URL(request.url).hostname.replace(/^www\./, '')}`, name: 'Website contact' },
 			replyTo: { email, name: oneLine(name) },
 			subject: `Website message from ${oneLine(name)}`,
 			text: `${message}\n\n${oneLine(name)}\n${email}`,

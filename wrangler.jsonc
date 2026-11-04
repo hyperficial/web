@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "bsurrey",
+	"name": "web",
 	"compatibility_date": "2026-11-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": { "enabled": true },
@@ -18,11 +18,9 @@
 		},
 	],
 
-	// Public settings. Secrets are NOT stored here, set them with wrangler secret put:
+
+	// Secrets are NOT stored here, set them in the Cloudflare dashboard (Worker, Settings, Variables and Secrets):
 	//   CONTACT_TO        the inbox that receives the messages
 	//   TURNSTILE_SECRET  the secret key of your Turnstile widget
-	"vars": {
-		"CONTACT_FROM": "website@bsurrey.com",
-		"CONTACT_ORIGIN": "https://bsurrey.com",
-	},
+	// The sender address and the allowed origin are derived from the domain the site is served on.
 }

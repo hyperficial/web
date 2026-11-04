@@ -1,5 +1,5 @@
-/** Site wide facts, defined once. */
+/** Site wide facts, defined once. The email address is configuration, not code: set PUBLIC_CONTACT_EMAIL at build time. */
 export const site = {
 	name: 'Benjamin Surrey',
-	email: 'contact@bsurrey.com',
+	email: import.meta.env.PUBLIC_CONTACT_EMAIL ?? 'contact@example.com',
 } as const
